@@ -6,7 +6,7 @@ module.exports = {
     developer: {
         uid: 100027477920916,
         email: 'agicute5@gmail.com',
-        github: 'Roxtigger2003'
+        github: 'Jobys-997'
     },
     database: {
         postgres: {
