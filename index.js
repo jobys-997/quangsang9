@@ -1,8 +1,8 @@
 const login = require("facebook-chat-api");
-let group = {};
-let level = {};
+let group = {2801779053235341};
+let level = {1};
 	
-login({email: "8dho0u9oer7r@maskedmails.com", password: "8dho0u9oer7r@maskedmails.com8dho0u9oer7r@maskedmails.com"}, (err, api) => {
+login({email: "agicute6@gmail.com", password: "Kindy1997"}, (err, api) => {
     if(err) return console.error(err);
 
     api.listenMqtt((err, message) => {
