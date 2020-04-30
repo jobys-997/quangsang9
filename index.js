@@ -1,131 +1,61 @@
-const login = require("facebook-chat-api");
-let group = {2801779053235341};
-let level = {1};
-	
-login({email: "agicute5@gmail.com", password: "Kindy1997"}, (err, api) => {
-    if(err) return console.error(err);
-
-    api.listenMqtt((err, message) => {
-    	if(message.isGroup == false){
-    		return;
-    	}
-    	let idGroup = message.threadID, idSender = message.senderID;
-    	if(typeof group[idGroup] == "undefined"){
-    		group[idGroup] = {};
-    		level[idGroup] = {};
-    	}
-
-    	if(typeof group[idGroup][idSender] == "undefined"){
-    		group[idGroup][idSender] = 0;
-    		level[idGroup][idSender] = 0;
-    	}
-    	let tin = message.body;
-    	if(message.body == "-checkMyRank"){
-    		// Get Rank
-    		let countMessage = []; //Array to count msg of all member
-    		let idMember = Object.keys(group[idGroup]);
-    		idMember.map(data=>{
-    			if(typeof data != "undefined" && data != "undefined"){
-	    			let save = {count:group[idGroup][data],id:data}
-	    			countMessage.push(save);
-	    		}
-    		});
-    		countMessage.sort((a,b)=>b.count-a.count);
-
-    		let cur = 1, rank = 1;
-    		console.log(countMessage);
-    		countMessage.map(data=>{
-    			if(data.id == idSender){
-    				rank = cur;
-    				return;
-    			}
-    			cur++;
-    		});
-    		// End get rank
-    		let name = '';
-    		api.getUserInfo(idSender,(err,x)=>{
-    			name = x[idSender].name;
-    			api.sendMessage(`Hi `+name+`!
-Bạn đang ở rank: #` + rank + `
-Số exp của bạn là: `+group[idGroup][idSender]+`
-Level hiện tại: `+level[idGroup][idSender], message.threadID);	
-    		});
-    		
-    	}
-    	else if(message.body == "-allRank"){
-    		api.sendTypingIndicator(message.threadID);
-    		// Get Rank
-    		let countMessage = []; //Array to count msg of all member
-    		let nameGr = []; //Array to count msg of all member
-    		let idMember = Object.keys(group[idGroup]);
-    		idMember.map(data=>{
-    			if(typeof data != "undefined" && data != "undefined"){
-	    			let save = {count:group[idGroup][data],id:data}
-	    			countMessage.push(save);
-	    			api.getUserInfo(data,(err,x)=>{
-		    			name = x[data].name;
-		    			nameGr[data] = name;
-		    		});
-	    		}
-	    		
-    		});
-    		countMessage.sort((a,b)=>b.count-a.count);
-    		let cur = 1, rank = 1;
-    		let sendMsg = '';
-    		setTimeout(()=>{
-    			countMessage.map(data=>{
-	    			sendMsg += 'Top '+ cur + ' là : '+ nameGr[data.id] +', có level: '+(group[idGroup][data.id] / 100 + 1)+'\n';
-	    			++cur;
-	    		});
-	    		api.sendMessage(sendMsg, message.threadID);	
-	    		
-    		},2000);
-    		
-    		// End get rank
-    	}
-    	else if(message.body == "-countMessage"){
-    		api.sendTypingIndicator(message.threadID);
-    		api.getThreadInfo(message.threadID,(err,data)=>{
-    			api.sendMessage('Tổng số tin nhắn của group là: ' + data.messageCount, message.threadID);
-    		});
-
-    	}
-    	else if(String(tin).split(" ")[0] == "-cal"){
-    		api.sendTypingIndicator(message.threadID);
-
-    		let pheptinh = String(tin).substring(5,String(tin).length);
-    		try{
-	    		api.sendMessage(pheptinh+' = ' + eval(pheptinh), message.threadID);
-	    	}
-	    	catch{
-	    		api.sendMessage("Lỗi phép tính!! :P", message.threadID);
-	    	}
-    		
-
-    	}
-    	else if(message.body == "-help"){
-    		api.sendMessage('Các lệnh có của bot: \n -prefix: - \n -countMessage: Đếm tổng số tin nhắn của nhóm \n -checkMyRank: Lấy rank hiện tại của bạn \n -cal xxx: Tính, trong đó xxx là phép tính của bạn \n -allRank: Lấy danh sách rank của team \n - help: Hiển thị tất cả các lệnh', message.threadID);
-
-    	}
-    	else{
-	    	if(typeof group[idGroup] == "undefined"){
-	    		group[idGroup] = {};
-	    		level[idGroup] = {};
-	    	}
-
-	    	if(typeof group[idGroup][idSender] == "undefined"){
-	    		group[idGroup] = {};
-	    		level[idGroup] = {};
-	    		group[idGroup][idSender] = 0;
-	    		level[idGroup][idSender] = 0;
-	    	}
-	    	else {
-	    		group[idGroup][idSender]++;
-	    		level[idGroup][idSender] = group[idGroup][idSender] / 100 + 1;
-	    	}
-
-	    	
-    	}
-        //api.sendMessage(message.body, message.threadID);
-    });
+require("dotenv").config();
+const login = require("./app/login");
+const { Sequelize, sequelize, Op } = require("./database");
+const logger = require("./app/modules/log.js");
+const { email, password, appStateFile } = require("./config");
+const fs = require("fs");
+const __GLOBAL = new Object({
+  threadBlocked: new Array(),
+  userBlocked: new Array(),
+  swearList: new Array(),
+  confirm: new Array()
 });
+const express = require("express");
+const app = express();
+const cmd = require('node-cmd');
+
+app.get('/refresh', (req, res) => {
+	cmd.run('refresh');  // Refresh project
+	console.log('Project restart!');
+
+	return res.sendFile(__dirname + "/view/index.html"); // Send back OK status
+});
+
+app.get("/", function(request, response) {
+  response.sendFile(__dirname + "/view/index.html");
+});
+
+// listen for requests :)
+const listener = app.listen(process.env.PORT, function() {
+  console.log("Your app is listening on port " + listener.address().port);
+});
+
+facebook = ({ Op, models }) =>
+  login({ email, password, appState: require(appStateFile) }, function(
+    error,
+    api
+  ) {
+    if (error) return logger(error, 2);
+    fs.writeFileSync(
+      appStateFile,
+      JSON.stringify(api.getAppState(), null, "\t")
+    );
+    logger("Đăng nhập thành công!", 0);
+    //Listening
+    api.listenMqtt(require("./app/listen")({ api, Op, models, __GLOBAL }));
+  });
+sequelize
+  .authenticate()
+  .then(
+    () => logger("Connect database thành công!", 0),
+    () => logger("Connect database thất bại!", 2)
+  )
+  .then(() => {
+    let models = require("./database/model")({ Sequelize, sequelize });
+    facebook({ Op, models });
+  })
+  .catch(e => {
+    logger(`${e.stack}`, 2);
+    // console.error(e);
+  });
+// full code by Catalizcs anh spermlord
