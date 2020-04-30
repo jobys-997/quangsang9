@@ -2,10 +2,10 @@ const path = require("path")
 module.exports = {
       development: false,
     prefix: process.env.PREFIX || '!',
-    botName: process.env.BOT_NAME || 'Sumi-Chan',
+    botName: process.env.BOT_NAME || 'Nobita Nobi',
     developer: {
         uid: 100027477920916,
-        email: 'rfechinonguyen@gmail.com',
+        email: 'agicute5@gmail.com',
         github: 'Roxtigger2003'
     },
     database: {
